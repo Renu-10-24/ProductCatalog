@@ -5,31 +5,4 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-@Setter
-@Getter
-@ToString
-public class SelfImplProductDTO {
-    private int id;
-    private String title;
-
-    @Override
-    public String toString() {
-        return "SelfImplProductDTO{" +
-                "id=" + id +
-                ", title='" + title + '\'' +
-                ", price=" + price +
-                ", description='" + description + '\'' +
-                ", rating=" + rating +
-                ", category='" + category + '\'' +
-                ", image='" + image + '\'' +
-                '}';
-    }
-
-    private double price;
-    private String description;
-    private Rating rating;
-    private String category;
-    private String image;
-
-}
+public record SelfImplProductDTO(int id,String title,double price, String description, Rating rating, String image, String category){}

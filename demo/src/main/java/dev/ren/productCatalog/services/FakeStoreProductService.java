@@ -2,39 +2,38 @@ package dev.ren.productCatalog.services;
 
 import dev.ren.productCatalog.dtos.FakeStoreProductDTO;
 import dev.ren.productCatalog.dtos.GenericProductDTO;
+import dev.ren.productCatalog.models.Product;
+import org.jspecify.annotations.Nullable;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
+import java.lang.reflect.Type;
+import java.util.List;
+
 @Service("fakeStoreProductService")
 public class FakeStoreProductService implements ProductService{
-    //private RestTemplateBuilder restTemplateBuilder; - auto injected in springboot 4
     private final RestClient restClient;
     public FakeStoreProductService(RestClient restClient) {
         this.restClient = restClient;
     }
 
     @Override
-    public GenericProductDTO getProductById(Long id){
+    public GenericProductDTO getProductById(long id){
         try {
-            System.out.println("in the fakeStore service class");
+            System.out.println("in the fakeStore service getProductById");
             ResponseEntity<FakeStoreProductDTO> responseEntity = restClient.get()
                     .uri("/products/{id}",id).retrieve().toEntity(FakeStoreProductDTO.class);
             HttpStatusCode statusCode = responseEntity.getStatusCode();
-            FakeStoreProductDTO fakeStoreProductDTO= responseEntity.getBody();
-            GenericProductDTO genericProductDTO = new GenericProductDTO();
-            if(fakeStoreProductDTO == null){
-                return new GenericProductDTO();
+            FakeStoreProductDTO dto= responseEntity.getBody();//using 2 different DTOs to show we can use only the fields appicable for our api, when using 3rd party api like FakeStore
+            if(dto == null){
+                return null;
             }
-            genericProductDTO.setId(fakeStoreProductDTO.getId());
-            genericProductDTO.setDescription(fakeStoreProductDTO.getDescription());
-            genericProductDTO.setTitle(fakeStoreProductDTO.getTitle());
-            genericProductDTO.setPrice(fakeStoreProductDTO.getPrice());
-            genericProductDTO.setCategory(fakeStoreProductDTO.getCategory());
-            genericProductDTO.setImage(fakeStoreProductDTO.getImage());
-            genericProductDTO.setRating(fakeStoreProductDTO.getRating());
+            GenericProductDTO genericProductDTO = new GenericProductDTO(dto.id(),dto.title(),dto.price(),dto.description(),dto.image(),dto.category());
             System.out.println("generic dto: " + genericProductDTO);
             return genericProductDTO;
         }catch(NullPointerException e){
@@ -49,7 +48,61 @@ public class FakeStoreProductService implements ProductService{
     }
 
     @Override
-    public String getAllProducts() {
-        return "";
+    public List<FakeStoreProductDTO> getAllProducts() {
+
+        List<FakeStoreProductDTO> dto = restClient.get()
+                .uri("/products").retrieve().body(new ParameterizedTypeReference<List<FakeStoreProductDTO>>() {});
+//        List<FakeStoreProductDTO> dto = dto.getBody();
+        dto.forEach(product ->System.out.println( product.id()+" "+product.title()));
+//        System.out.println(d.getStatusCode());
+        return dto;
     }
+    @PostMapping
+    public GenericProductDTO createProduct(GenericProductDTO genericProductDTO){
+        System.out.println("id       "+genericProductDTO.id());
+        System.out.println("title    "+genericProductDTO.title());
+        ResponseEntity<GenericProductDTO> response = restClient.post()
+                .uri("/products")
+                .body(genericProductDTO)
+                .retrieve()
+                .toEntity(GenericProductDTO.class);
+        System.out.println("response body - product : "+response.getBody());
+        System.out.println("status  : "+response.getStatusCode());
+        if(response.getStatusCode().is4xxClientError()){
+            System.out.println("Malformed request");
+        }
+        if(response.getStatusCode().is2xxSuccessful()){
+            System.out.println("Product created successfully with id "+response.getBody().id());
+        }
+        if(response.getStatusCode().is5xxServerError()){
+            System.out.println("Server side error");
+        }
+        return response.getBody();
+    }
+
+    @Override
+    public String deleteProductById(long id) {
+        restClient.delete()
+                .uri("/products/{id}",id)
+                .retrieve().toBodilessEntity();
+
+        ResponseEntity<GenericProductDTO> response = restClient.delete()
+                .uri("/products/{id}",id)
+                .retrieve().toEntity(GenericProductDTO.class);
+        System.out.println(response.getBody());
+        System.out.println(response.getStatusCode());
+        return "Deleted product with id : "+id;
+    }
+
+    @Override
+    public void updateProductById(GenericProductDTO product, long id) {
+        //update -- put() .uri(String, Map) .body(Object) .retrieve() .toBodilessEntity()
+        ResponseEntity<Void> responseEntity = restClient.put().uri("/products/{id}",id).body(Product.class).retrieve().toBodilessEntity();
+        System.out.println(responseEntity.getStatusCode());
+        System.out.println("Product with "+id+" updated successfully");
+    }
+
+
+
+
 }

@@ -1,48 +1,49 @@
 package dev.ren.productCatalog.controllers;
 
+
 import dev.ren.productCatalog.dtos.FakeStoreProductDTO;
 import dev.ren.productCatalog.dtos.GenericProductDTO;
 import dev.ren.productCatalog.services.FakeStoreProductService;
 import dev.ren.productCatalog.services.ProductService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.http.ResponseEntity;
+
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController("/products")
 @RequestMapping("/products")
 public class ProductController {
 
-    private final FakeStoreProductService fakeStoreProductService;
+//    private final FakeStoreProductService fakeStoreProductService;
     private ProductService productService;
 
     @Autowired
-    public ProductController(@Qualifier("fakeStoreProductService") ProductService productService, FakeStoreProductService fakeStoreProductService){
+    public ProductController(@Qualifier("fakeStoreProductService") ProductService productService){
         this.productService = productService;
-        this.fakeStoreProductService = fakeStoreProductService;
     }
     //@GetMapping("/products")
     @GetMapping("")
-    public String getAllProducts(){
+    public List<FakeStoreProductDTO> getAllProducts(){
         return productService.getAllProducts();
     }
     //handles requests that look like http://localhost:8080/products/123
     @GetMapping( "{id}")
-    public GenericProductDTO getProductById(@PathVariable("id") Long id){
+    public GenericProductDTO getProductById(@PathVariable("id") long id){
                 return productService.getProductById(id);
     }
     @DeleteMapping("{id}")
-    public void deleteProductById(){
-
+    public String deleteProductById(@PathVariable("id") long id){
+        return productService.deleteProductById(id);
     }
-    @PostMapping("")
-    public String createProduct(){
-        return "Returning product with id : " + UUID.randomUUID();
+    @PostMapping
+    public GenericProductDTO createProduct(@RequestBody GenericProductDTO product){
+        return productService.createProduct(product);
     }
     @PutMapping("{id}")
-    public void updateProductById(){
-
+    public void updateProductById(@RequestBody GenericProductDTO product, @PathVariable("id") long id){
+        productService.updateProductById(product,id);
     }
 }

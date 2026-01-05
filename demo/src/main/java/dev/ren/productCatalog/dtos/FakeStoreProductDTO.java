@@ -1,22 +1,23 @@
 package dev.ren.productCatalog.dtos;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import dev.ren.productCatalog.models.Category;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
+public record FakeStoreProductDTO(Integer id,String title,Double price,String description,String category,String image) {
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-@Setter
-@Getter
-@ToString
-public class FakeStoreProductDTO {
-    private int id;
-    private String title;
-    private double price;
-    private String description;
-    private Rating rating;
-    private String image;
-    private String category;
-
+    public FakeStoreProductDTO(String title,double price,String description,String category,String image){
+        this(0, title,price,description,category,image);
+    }
+    public FakeStoreProductDTO{
+        System.out.println("in the custom logic ren");//this works !
+        if(id==null){
+            id=0;
+        }
+        if(description == null){
+            description = "No description provided";
+        }
+        if(price == null){
+            price = 0.0;
+        }
+        if(category == null){
+            category = "Miscellaneous";
+        }
+    }
 }
