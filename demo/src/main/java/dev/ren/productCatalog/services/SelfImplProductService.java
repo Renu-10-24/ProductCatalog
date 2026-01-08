@@ -2,6 +2,7 @@ package dev.ren.productCatalog.services;
 
 import dev.ren.productCatalog.dtos.FakeStoreProductDTO;
 import dev.ren.productCatalog.dtos.GenericProductDTO;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -17,7 +18,7 @@ public class SelfImplProductService implements ProductService{
     }
 
     @Override
-    public List<FakeStoreProductDTO> getAllProducts() {
+    public ResponseEntity<FakeStoreProductDTO[]> getAllProducts() {
         return null;
     }
 
@@ -27,8 +28,8 @@ public class SelfImplProductService implements ProductService{
     }
 
     @Override
-    public String deleteProductById(long id) {
-        return "";
+    public ResponseEntity<GenericProductDTO> deleteProductById(long id) {
+        return null;
     }
 
     @Override

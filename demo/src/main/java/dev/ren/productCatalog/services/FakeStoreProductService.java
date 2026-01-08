@@ -3,11 +3,16 @@ package dev.ren.productCatalog.services;
 import dev.ren.productCatalog.dtos.FakeStoreProductDTO;
 import dev.ren.productCatalog.dtos.GenericProductDTO;
 import dev.ren.productCatalog.models.Product;
+import dev.ren.productCatalog.services.exceptions.ExceptionDTO;
+import dev.ren.productCatalog.services.exceptions.ResourceNotFoundException;
 import org.jspecify.annotations.Nullable;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
@@ -48,15 +53,27 @@ public class FakeStoreProductService implements ProductService{
     }
 
     @Override
-    public List<FakeStoreProductDTO> getAllProducts() {
+    public ResponseEntity<FakeStoreProductDTO[]> getAllProducts() {
+//        List<FakeStoreProductDTO> dto = restClient.get()
+//                .uri("/products").retrieve().body(new ParameterizedTypeReference<List<FakeStoreProductDTO>>() {});
+//        dto.forEach(product ->System.out.println( product.id()+" "+product.title()));
+//        return dto;
 
-        List<FakeStoreProductDTO> dto = restClient.get()
-                .uri("/products").retrieve().body(new ParameterizedTypeReference<List<FakeStoreProductDTO>>() {});
-//        List<FakeStoreProductDTO> dto = dto.getBody();
-        dto.forEach(product ->System.out.println( product.id()+" "+product.title()));
-//        System.out.println(d.getStatusCode());
-        return dto;
+        //method(HttpMethod) .uri(String, Object…​) .headers(Consumer<HttpHeaders>) .body(Object) .retrieve() .toEntity(ParameterizedTypeReference)
+        //similar to exchange method
+        List<FakeStoreProductDTO> dto = restClient.method(HttpMethod.GET).uri("/products").retrieve().body(new ParameterizedTypeReference<List<FakeStoreProductDTO>>() {});
+        dto.forEach(product ->{if(product != null)System.out.println( product.id()+" "+product.title());});
+
+        //Getting ResponseEntity of array of dto objects
+        ResponseEntity<FakeStoreProductDTO[]> dtoArrayResponseEntity= restClient.method(HttpMethod.GET).uri("/products").retrieve()
+                .toEntity(new ParameterizedTypeReference<FakeStoreProductDTO[]>() {});
+        for(FakeStoreProductDTO productDTO : dtoArrayResponseEntity.getBody()){
+            System.out.println(productDTO.id() +" "+productDTO.title());
+        }
+        return dtoArrayResponseEntity;
     }
+
+
     @PostMapping
     public GenericProductDTO createProduct(GenericProductDTO genericProductDTO){
         System.out.println("id       "+genericProductDTO.id());
@@ -81,7 +98,7 @@ public class FakeStoreProductService implements ProductService{
     }
 
     @Override
-    public String deleteProductById(long id) {
+    public ResponseEntity<GenericProductDTO> deleteProductById(long id) throws ResourceNotFoundException {
         restClient.delete()
                 .uri("/products/{id}",id)
                 .retrieve().toBodilessEntity();
@@ -89,9 +106,16 @@ public class FakeStoreProductService implements ProductService{
         ResponseEntity<GenericProductDTO> response = restClient.delete()
                 .uri("/products/{id}",id)
                 .retrieve().toEntity(GenericProductDTO.class);
-        System.out.println(response.getBody());
-        System.out.println(response.getStatusCode());
-        return "Deleted product with id : "+id;
+
+        ResponseEntity<GenericProductDTO> responseEntity = restClient.method(HttpMethod.DELETE).uri("/products/{id}",id).retrieve()
+                .toEntity(new ParameterizedTypeReference<GenericProductDTO>() {
+        });
+        if(responseEntity.getBody() == null){
+            throw new ResourceNotFoundException("Product with id "+id+" not found");
+        }
+        System.out.println(responseEntity.getBody());
+        System.out.println(responseEntity.getStatusCode());
+        return responseEntity;
     }
 
     @Override
