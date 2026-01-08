@@ -1,10 +1,12 @@
 package dev.ren.productCatalog.models;
 
-public class Product extends BaseModel{
+import lombok.Data;
+
+@Data
+public class Product extends BaseModel {
     private String title;
+    private double price;
     private String description;
     private String image;
-    private Category category;
-    private double price;
-
+    private String category;
 }

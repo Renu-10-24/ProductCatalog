@@ -19,7 +19,7 @@ public record GenericProductDTO (Integer id, String title, Double price, String 
         }
     }
     public GenericProductDTO(String title,double price,String description,String category,String image){
-        this(0, title,price,description,category,image);// we cannot skip calling the canonical /default constructor.
-        System.out.println("in the custom constructor ren");
+        this(0, title,price,description,image,category);// we cannot skip calling the canonical /default constructor.
+        System.out.println("in the order jumbled constructor ren");
     }
 }

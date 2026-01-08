@@ -108,7 +108,7 @@ public class FakeStoreProductService implements ProductService{
                 .retrieve().toEntity(GenericProductDTO.class);
 
         ResponseEntity<GenericProductDTO> responseEntity = restClient.method(HttpMethod.DELETE).uri("/products/{id}",id).retrieve()
-                .toEntity(new ParameterizedTypeReference<GenericProductDTO>() {
+                .toEntity(new ParameterizedTypeReference<>() {
         });
         if(responseEntity.getBody() == null){
             throw new ResourceNotFoundException("Product with id "+id+" not found");
@@ -119,11 +119,12 @@ public class FakeStoreProductService implements ProductService{
     }
 
     @Override
-    public void updateProductById(GenericProductDTO product, long id) {
+    public GenericProductDTO updateProductById(FakeStoreProductDTO product, int id) {
         //update -- put() .uri(String, Map) .body(Object) .retrieve() .toBodilessEntity()
-        ResponseEntity<Void> responseEntity = restClient.put().uri("/products/{id}",id).body(Product.class).retrieve().toBodilessEntity();
+        ResponseEntity<GenericProductDTO> responseEntity = restClient.method(HttpMethod.PUT).uri("/products/{id}",id).body(product).retrieve().toEntity(new ParameterizedTypeReference<GenericProductDTO>() {});
         System.out.println(responseEntity.getStatusCode());
         System.out.println("Product with "+id+" updated successfully");
+        return responseEntity.getBody();
     }
 
 

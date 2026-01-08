@@ -3,6 +3,7 @@ package dev.ren.productCatalog.controllers;
 
 import dev.ren.productCatalog.dtos.FakeStoreProductDTO;
 import dev.ren.productCatalog.dtos.GenericProductDTO;
+import dev.ren.productCatalog.models.Product;
 import dev.ren.productCatalog.services.FakeStoreProductService;
 import dev.ren.productCatalog.services.ProductService;
 import dev.ren.productCatalog.services.exceptions.ExceptionDTO;
@@ -47,8 +48,8 @@ public class ProductController {
         return productService.createProduct(product);
     }
     @PutMapping("{id}")
-    public void updateProductById(@RequestBody GenericProductDTO product, @PathVariable("id") long id){
-        productService.updateProductById(product,id);
+    public GenericProductDTO updateProductById(@RequestBody FakeStoreProductDTO product, @PathVariable("id") int id){
+        return productService.updateProductById(product,id);
     }
     //Exception handler methods can be defined in the controller itself like this or moved to a class annotated with @ControllerAdvice - to make them globally accessible by all controllers
 
