@@ -2,7 +2,6 @@ package dev.ren.productCatalog.services;
 
 import dev.ren.productCatalog.dtos.FakeStoreProductDTO;
 import dev.ren.productCatalog.dtos.GenericProductDTO;
-import dev.ren.productCatalog.models.Product;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
@@ -34,7 +33,7 @@ public class SelfImplProductService implements ProductService{
     }
 
     @Override
-    public GenericProductDTO updateProductById(FakeStoreProductDTO product, int id) {
-        return new GenericProductDTO(id,"Fabercastell Ballpoint pen", 12.09,"Pen","Stationery","https://google.com/cutePens");
+    public void updateProductById(GenericProductDTO product, long id) {
+
     }
 }
