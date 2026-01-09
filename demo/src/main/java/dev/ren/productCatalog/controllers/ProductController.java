@@ -25,7 +25,7 @@ public class ProductController {
     private ProductService productService;
 
     @Autowired
-    public ProductController(@Qualifier("fakeStoreProductService") ProductService productService){
+    public ProductController(ProductService productService){
         this.productService = productService;
     }
     //@GetMapping("/products")
@@ -36,10 +36,14 @@ public class ProductController {
     //handles requests that look like http://localhost:8080/products/123
     @GetMapping( "{id}")
     public GenericProductDTO getProductById(@PathVariable("id") long id) throws ResourceNotFoundException{
-                return productService.getProductById(id);
+                GenericProductDTO genericProductDTO = productService.getProductById(id);
+                if(genericProductDTO == null){
+                    throw new ResourceNotFoundException("Product Doesn't exist");
+                }
+                return genericProductDTO;
     }
     @DeleteMapping("{id}")
-    public ResponseEntity<GenericProductDTO> deleteProductById(@PathVariable("id") long id) throws ResourceNotFoundException {
+    public GenericProductDTO deleteProductById(@PathVariable("id") long id) throws ResourceNotFoundException {
         return productService.deleteProductById(id);
     }
     @PostMapping
@@ -47,10 +51,9 @@ public class ProductController {
         return productService.createProduct(product);
     }
     @PutMapping("{id}")
-    public void updateProductById(@RequestBody GenericProductDTO product, @PathVariable("id") long id){
-        productService.updateProductById(product,id);
+    public ResponseEntity<FakeStoreProductDTO> updateProductById(@RequestBody GenericProductDTO product, @PathVariable("id") long id){
+        return productService.updateProductById(product,id);
     }
     //Exception handler methods can be defined in the controller itself like this or moved to a class annotated with @ControllerAdvice - to make them globally accessible by all controllers
-
 
 }

@@ -1,20 +1,18 @@
-package dev.ren.productCatalog.services;
+package dev.ren.productCatalog.clients.productService;
 
 import dev.ren.productCatalog.dtos.FakeStoreProductDTO;
 import dev.ren.productCatalog.dtos.GenericProductDTO;
 import dev.ren.productCatalog.services.exceptions.ResourceNotFoundException;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Service;
 
-@Service
-public interface ProductService {
-    GenericProductDTO getProductById(long id) throws ResourceNotFoundException;
+public interface ThirdPartyProductServiceClient {
+    FakeStoreProductDTO getProductById(long id);
 
     ResponseEntity<FakeStoreProductDTO[]> getAllProducts();
 
-    GenericProductDTO createProduct(GenericProductDTO genericProductDTO);
+    FakeStoreProductDTO createProduct(FakeStoreProductDTO fakeStoreProductDTO);
 
-    GenericProductDTO deleteProductById(long id) throws ResourceNotFoundException;
+    FakeStoreProductDTO deleteProductById(long id) throws ResourceNotFoundException;
 
     ResponseEntity<FakeStoreProductDTO> updateProductById(GenericProductDTO product, long id);
 }
