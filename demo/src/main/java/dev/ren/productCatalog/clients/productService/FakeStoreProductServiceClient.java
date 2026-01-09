@@ -20,26 +20,16 @@ public class FakeStoreProductServiceClient{
         this.restClient = restClient;
     }
 
-    public FakeStoreProductDTO getProductById(long id){
-        try {
+    public FakeStoreProductDTO getProductById(long id)  throws ResourceNotFoundException {
             System.out.println("in the fakeStore service getProductById");
             ResponseEntity<FakeStoreProductDTO> responseEntity = restClient.get()
                     .uri("/products/{id}",id).retrieve().toEntity(FakeStoreProductDTO.class);
             HttpStatusCode statusCode = responseEntity.getStatusCode();
             FakeStoreProductDTO dto= responseEntity.getBody();//using 2 different DTOs to show we can use only the fields appicable for our api, when using 3rd party api like FakeStore
             if(dto == null){
-                return null;
+                throw new ResourceNotFoundException("Product with id "+id+" doesn't exist");
             }
             return dto;
-        }catch(NullPointerException e){
-            System.out.println("status : "+e.getMessage());
-        }
-        catch(HttpClientErrorException e){
-            System.out.println("status : "+e.getStatusCode());
-            System.out.println("response body : "+e.getResponseBodyAsString());
-        }
-        System.out.println("returning null");
-        return null;
     }
 
     public ResponseEntity<FakeStoreProductDTO[]> getAllProducts() {
