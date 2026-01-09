@@ -7,9 +7,9 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 
 @ControllerAdvice
 public class ControllerAdvices {
-    @ExceptionHandler(ResourceNotFoundException.class)
-    private ResponseEntity<ExceptionDTO> handleNotFoundException(ResourceNotFoundException e){
-        System.out.println("Invoking the exception handler method for ResourceNotFoundException");
-        return new ResponseEntity<>(new ExceptionDTO(HttpStatus.NOT_FOUND,e.getMessage()),HttpStatus.NOT_FOUND);
-    }
+//    @ExceptionHandler(ResourceNotFoundException.class)
+//    private ResponseEntity<ExceptionDTO> handleNotFoundException(ResourceNotFoundException e){
+//        System.out.println("Invoking the exception handler method for ResourceNotFoundException");
+//        return new ResponseEntity<>(new ExceptionDTO(HttpStatus.NOT_FOUND,e.getMessage()),HttpStatus.NOT_FOUND);
+//    }
 }

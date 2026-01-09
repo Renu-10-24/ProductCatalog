@@ -32,9 +32,6 @@ public class FakeStoreProductService implements ProductService {
 
     public GenericProductDTO getProductById(long id) throws ResourceNotFoundException{
         FakeStoreProductDTO fakeStoreProductDTO = fakeStoreProductServiceClient.getProductById(id);
-        if(fakeStoreProductDTO == null){
-            throw new ResourceNotFoundException("Product doesn't exist");
-        }
         return convertFakeStoreProductIntoGenericProduct(fakeStoreProductDTO);
     }
 
