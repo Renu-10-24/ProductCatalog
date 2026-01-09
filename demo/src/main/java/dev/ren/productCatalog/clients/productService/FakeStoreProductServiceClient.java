@@ -107,7 +107,7 @@ public class FakeStoreProductServiceClient{
     public ResponseEntity<FakeStoreProductDTO> updateProductById(GenericProductDTO product, long id) {
         //update -- put() .uri(String, Map) .body(Object) .retrieve() .toBodilessEntity()
         //do validation if product exists for id and then call update
-        ResponseEntity<FakeStoreProductDTO> responseEntity = restClient.method(HttpMethod.PUT).uri("/products/{id}",id).body(product).retrieve().toEntity(new ParameterizedTypeReference<FakeStoreProductDTO>() {
+        ResponseEntity<FakeStoreProductDTO> responseEntity = restClient.method(HttpMethod.PUT).uri("/products/{id}",id).body(product).retrieve().toEntity(new ParameterizedTypeReference<>() {
         });
         System.out.println(responseEntity.getStatusCode());
         System.out.println("Product with "+id+" updated successfully");
