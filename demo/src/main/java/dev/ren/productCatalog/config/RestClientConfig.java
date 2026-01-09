@@ -1,5 +1,6 @@
 package dev.ren.productCatalog.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestClient;
@@ -7,8 +8,10 @@ import org.springframework.web.client.RestClient;
 
 @Configuration
 public class RestClientConfig {
+    @Value("${fakestore.api.url}")
+    private String fakestoreApiUrl;
     @Bean
     public RestClient restClient() {
-        return RestClient.builder().baseUrl("https://fakestoreapi.com").build();
+        return RestClient.builder().baseUrl(fakestoreApiUrl).build();
     }
 }

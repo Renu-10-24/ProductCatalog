@@ -17,8 +17,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.UUID;
 
-@RestController("/products")
-@RequestMapping("/products")
+@RestController("${fakestore.api.paths.product}")
+@RequestMapping("${fakestore.api.paths.product}")
 public class ProductController {
 
 //    private final FakeStoreProductService fakeStoreProductService;
