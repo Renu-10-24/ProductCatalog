@@ -1,14 +1,15 @@
 package dev.ren.productCatalog.models;
 
 import jakarta.persistence.Entity;
-import jakarta.persistence.OneToOne;
+import jakarta.persistence.ManyToOne;
+
 
 @Entity
 public class Product extends BaseModel{
     private String title;
     private String description;
     private String image;
-    @OneToOne
+    @ManyToOne
     private Category category;
     private double price;
 
