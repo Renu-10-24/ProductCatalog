@@ -14,9 +14,21 @@ import dev.ren.productCatalog.inheritanceExample.tableperclass.repository.TPCIns
 import dev.ren.productCatalog.inheritanceExample.tableperclass.repository.TPCMentorRepository;
 import dev.ren.productCatalog.inheritanceExample.tableperclass.repository.TPCTARepository;
 import dev.ren.productCatalog.inheritanceExample.tableperclass.repository.TPCUserRepository;
+import dev.ren.productCatalog.models.Category;
+import dev.ren.productCatalog.models.Product;
+import dev.ren.productCatalog.repositories.CategoryRepository;
+import dev.ren.productCatalog.repositories.ProductRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.dao.DataAccessException;
+import org.springframework.dao.InvalidDataAccessApiUsageException;
+
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @SpringBootTest
 class ProductCatalogApplicationTests {
@@ -48,12 +60,12 @@ class ProductCatalogApplicationTests {
     @Autowired
     private MSCInstructorRepository mscInstructorRepository;
 
-	@Test
-	void contextLoads() {
-	}
+    @Test
+    void contextLoads() {
+    }
 
     @Test
-    public void testInheritanceType_joined(){
+    public void testInheritanceType_joined() {
         dev.ren.productCatalog.inheritanceExample.joinedtable.User userJt = new dev.ren.productCatalog.inheritanceExample.joinedtable.User();
         userJt.setEmail("naman@scaler.com");
         userJt.setPassword("Password");
@@ -68,14 +80,14 @@ class ProductCatalogApplicationTests {
     }
 
     @Test
-    public void testInheritanceType_table_per_class(){
+    public void testInheritanceType_table_per_class() {
         dev.ren.productCatalog.inheritanceExample.tableperclass.User userTpc = new dev.ren.productCatalog.inheritanceExample.tableperclass.User();
         userTpc.setEmail("naman@scaler.com");
         userTpc.setPassword("Password");
         tpcUserRepository.save(userTpc);
 
         dev.ren.productCatalog.inheritanceExample.tableperclass.Mentor mentorTpc = new dev.ren.productCatalog.inheritanceExample.tableperclass.Mentor();
-         mentorTpc.setEmail("NamanBhalla@scaler.com");
+        mentorTpc.setEmail("NamanBhalla@scaler.com");
         mentorTpc.setPassword("password");
         mentorTpc.setNoOfSessions(50);
         mentorTpc.setNoOfMentees(4);
@@ -89,13 +101,13 @@ class ProductCatalogApplicationTests {
         tpcInstructorRepository.save(instructorTpc);
 
         /// use constructor to create objects, not through setter getter, very confusing
-        dev.ren.productCatalog.inheritanceExample.tableperclass.TA taTpc = new dev.ren.productCatalog.inheritanceExample.tableperclass.TA("anjali@scaler.com",4);
+        dev.ren.productCatalog.inheritanceExample.tableperclass.TA taTpc = new dev.ren.productCatalog.inheritanceExample.tableperclass.TA("anjali@scaler.com", 4);
         tpcTARepository.save(taTpc);
 
     }
 
     @Test
-    public void testInheritanceType_singleTable(){
+    public void testInheritanceType_singleTable() {
         dev.ren.productCatalog.inheritanceExample.singletable.User userSt = new dev.ren.productCatalog.inheritanceExample.singletable.User();
         userSt.setEmail("naman_st@scaler.com");
         userSt.setPassword("Password_st");
@@ -115,32 +127,94 @@ class ProductCatalogApplicationTests {
         stInstructorRepository.save(instructorSt);
 
         /// use constructor to create objects, not through setter getter, very confusing
-        dev.ren.productCatalog.inheritanceExample.singletable.TA taSt = new dev.ren.productCatalog.inheritanceExample.singletable.TA("anjali_st@scaler.com",5);
+        dev.ren.productCatalog.inheritanceExample.singletable.TA taSt = new dev.ren.productCatalog.inheritanceExample.singletable.TA("anjali_st@scaler.com", 5);
         stTARepository.save(taSt);
     }
 
     @Test
-    public void testInheritanceType_mappedSuperClass(){
+    public void testInheritanceType_mappedSuperClass() {
         //User is abstract class and no associated table in DB. Cannot instantiate the User class
-      //  dev.ren.productCatalog.inheritanceExample.mappedsuperclass.User userMsc = new dev.ren.productCatalog.inheritanceExample.mappedsuperclass.User();
+        //  dev.ren.productCatalog.inheritanceExample.mappedsuperclass.User userMsc = new dev.ren.productCatalog.inheritanceExample.mappedsuperclass.User();
 //        userMsc.setEmail("naman_st@scaler.com");
 //        userMsc.setPassword("Password_st");
 //        mscUserRepository.save(userMsc);
 
         String email = "NamanBhalla_msc@scaler.com";
-        String password= "password_msc";
-        int noOfSessions= 75;
-        int noOfMentees= 45;
-        dev.ren.productCatalog.inheritanceExample.mappedsuperclass.Mentor mentorMsc = new dev.ren.productCatalog.inheritanceExample.mappedsuperclass.Mentor(email, password,noOfSessions,noOfMentees);
+        String password = "password_msc";
+        int noOfSessions = 75;
+        int noOfMentees = 45;
+        dev.ren.productCatalog.inheritanceExample.mappedsuperclass.Mentor mentorMsc = new dev.ren.productCatalog.inheritanceExample.mappedsuperclass.Mentor(email, password, noOfSessions, noOfMentees);
 
         mscMentorRepository.save(mentorMsc);
 
-        dev.ren.productCatalog.inheritanceExample.mappedsuperclass.Instructor instructorMsc = new dev.ren.productCatalog.inheritanceExample.mappedsuperclass.Instructor(email,true);
+        dev.ren.productCatalog.inheritanceExample.mappedsuperclass.Instructor instructorMsc = new dev.ren.productCatalog.inheritanceExample.mappedsuperclass.Instructor(email, true);
         mscInstructorRepository.save(instructorMsc);
 
         /// use constructor to create objects, not through setter getter, very confusing
-        dev.ren.productCatalog.inheritanceExample.mappedsuperclass.TA taMsc = new dev.ren.productCatalog.inheritanceExample.mappedsuperclass.TA("anjali_msc@scaler.com","secret_23",4);
+        dev.ren.productCatalog.inheritanceExample.mappedsuperclass.TA taMsc = new dev.ren.productCatalog.inheritanceExample.mappedsuperclass.TA("anjali_msc@scaler.com", "secret_23", 4);
         mscTARepository.save(taMsc);
     }
 
+    @Autowired
+    private ProductRepository productRepository;
+    @Autowired
+    private CategoryRepository categoryRepository;
+    @Autowired
+    private EntityManager entityManager; // Inject this
+
+    @Test
+    @Transactional
+    public void testFetchTypes() {
+        Category category = new Category();
+        category.setName("Phones");
+        Category savedCategory = categoryRepository.save(category);
+        Product product = new Product();
+        product.setPrice(100);
+        product.setCategory(category);
+        product.setImage("Helllow.jpg");
+        Product prdFromDb = productRepository.save(product);
+
+        // DO write to DB immediately, do not batch writes
+        productRepository.flush();
+
+        // 2. CRITICAL STEP: Clear the cache
+
+        // when we do a find here within the springboottest, hibernate is fetching the product from
+        //its l1 cache - Persistence Context, to test the lazy loading, we are manually wiping out the cache with clear method
+        // Wipe the L1 cache / detach all objects
+        entityManager.clear();
+        System.out.println("fjfkflkF " + prdFromDb.getUuid());
+
+        // 3. Now Fetch
+        System.out.println("--- FETCHING PRODUCT NOW ---");
+        Product fetchedProduct = productRepository.findById(prdFromDb.getUuid()).get();
+
+        // Check your logs here! You should see only ONE query for Product.
+
+        System.out.println("--- ACCESSING CATEGORY NOW ---");
+        String catName = fetchedProduct.getCategory().getName();
+
+        // Check your logs here! NOW you should see the second SELECT for Category.
+    }
+
+    @Test
+    @Transactional
+    public void testCascadeTypes_whenCascadeIsNotExplicitlyMentioned() { // cascade type not defined on Product and also Category
+        Category category = new Category();
+        category.setName("GadgetsUnder5");
+
+// here the category is transient - meaning not persisted / stored in db
+
+        Product product = new Product();
+        product.setPrice(4.99);
+        product.setCategory(category);
+        product.setImage("PortableHeadsetFan.jpg");
+        //using springdatajpa high level api
+        assertThrows(DataAccessException.class,()->{
+            productRepository.save(product);
+            // DO write to DB immediately, do not batch writes
+            productRepository.flush();
+        });
+    }
 }
+

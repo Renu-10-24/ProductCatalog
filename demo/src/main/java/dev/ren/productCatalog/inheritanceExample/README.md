@@ -1,4 +1,5 @@
 ## types of inheritance
+https://www.baeldung.com/hibernate-inheritance 
 
 ## Table Per Class - InheritanceType.TABLE_PER_CLASS
 @Entity on all classes, parent and children, all classes have tables in DB
@@ -157,10 +158,34 @@ Hibernate: alter table jt_mentor add constraint FK74kd6ct4a7jq51dr84f8m7usr fore
 Hibernate: alter table jt_ta add constraint FKhq7nv0qp5o8md1xwoglkc7g7k foreign key (user_id) references jt_user (id)
 Hibernate: alter table product add constraint FK1mtsbur82frn64de7balymq9s foreign key (category_id) references category (id)
 
-###  HOW and Why JOIN FETCH works
+###  HOW and Why JOIN FETCH works - EAGER vs LAZY fetch
+-- Couldn't find the select queries executed by Hibernate at all for hours, great learning curve
+-- even though we were getting the ApplicationContext loaded with the contextLoads() test method, I changed the project to use a dependency for clearer logging of the query execution time and that caused the Application context not loading, beans nt initialized issues, to fix that, I had to use a resources file in the test folder with the same config as in the application resouces folder.
+
+Reasons, - Hibernate has a first level cache PersistenceContext that cached the objects that were just saved / persisted to db. And so, it was using those objects to fetch the results instead of even hitting the database -- this would NOT even trigger the select queries (for Product obj, as well as Category obj).
+
+One common culprit is the Jackson json serializer that would do a eager fetch to populate the object, but in our case, the select query not running at all, was due to the PERSISTENCE CONTEXT caching.
+
+Also the Debugger runs the toString method that enables the eager fetch  (i.e., the objects inside the category object to be fetched eagerly) - with the setup
+
+We really need to STEP INTO the code line by line to see when the Category object was fetched. And that leads to using the DEBUGGER. And the IDE Build Deploy Execution -> Debugger -> Java usually has the Settings Enable alternative view for Collection classes and Enable toString object view enabled by default that does an eager fetch to populate the fields to show.
+
+Once disabled, I could see the toString method being called to populate the values in the Debugger a little later - for us to understand how it works internally.
+
+Also, hibernate is smart enough to discard the insert/ update in the @Test annotated methods, even when we use @Transactional annotation. So, the inserts might done be flushed to DB at all - how do we know, if they persisted at all? - Look for the insert / update queries in the logs.
+// so we flush to db first, to confirm the writes to DB actually take place and then, we need to get the EntityManager object injected manually, to use the clear() method to stop the L1 PersistenceContext caching that stops the fetching altogether.
+And then, voila, we can see the select queries in logs, and find out that the LAZY FETCH works !
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    private Category category;
+
+on the Product class.
+
+---------------------------------------------------------------------------------------------------------------------
+HOW LazyFetch works - internal implementation details in Hibernate 
 
 Gemini said
-In Hibernate, the transition between entity states and the internal workings of proxies are the "engine" behind the LazyInitializationException you are exploring in your Scaler class.
+In Hibernate, the transition between entity states and the internal workings of proxies are the "engine" behind the LazyInitializationException.
 
 1. Hibernate Internal Proxy Creation
    When Hibernate loads an entity with FetchType.LAZY, it doesn't return your actual class. Instead, it uses a library (usually ByteBuddy) to generate a Proxy Class at runtime.
@@ -189,6 +214,7 @@ Transient	Before save()	New object in Java memory. No ID and no record in the DB
 Persistent	Inside @Transactional	Linked to a Session. Any change you make in Java is automatically updated in the DB (Dirty Checking).
 Detached	After @Transactional	The Session is closed. The object still has an ID and data, but Hibernate is no longer "watching" it.
 Removed	After delete()	Scheduled for deletion at the end of the transaction.
+
 3. State Transitions (Before, During, and After)
    A. Before the Transaction (Transient)
    You create the object: Instructor i = new Instructor();. It is just an object in RAM. Hibernate doesn't know it exists.
@@ -211,13 +237,54 @@ The Crash: Because the Session is closed, the Proxy's LazyInitializer has no dat
 
 Summary: Why JOIN FETCH works
 As mentioned in your Representing Inheritance class, using JOIN FETCH moves the entity from the Proxy state to the Initialized state while the transaction is still active. This ensures the data is present even after the entity becomes Detached.
+-----------------------------------------------------------------------------------------------------------------------------
+## CascadeTypes
+When we have a foreign key relation/ constraint - Category_id is foreign key in Product table
 
-https://www.baeldung.com/hibernate-inheritance
+when there is no cascade type defined on Product and Category, 
 
--------------------------------------------------------------------------------------------------------
+when we set the category of a product to something that doesn't exist in the Category table, 
+it throws 
+
+we see this : 
+
+org.springframework.dao.InvalidDataAccessApiUsageException: org.hibernate.TransientPropertyValueException: Persistent instance of 'dev.ren.productCatalog.models.Product' references an unsaved transient instance of 'dev.ren.productCatalog.models.Category' (persist the transient instance before flushing) [dev.ren.productCatalog.models.Product.category -> dev.ren.productCatalog.models.Category]
+Caused by: java.lang.IllegalStateException: org.hibernate.TransientPropertyValueException: Persistent instance of 'dev.ren.productCatalog.models.Product' references an unsaved transient instance of 'dev.ren.productCatalog.models.Category' (persist the transient instance before flushing) [dev.ren.productCatalog.models.Product.category -> dev.ren.productCatalog.models.Category]
+
+## Gemini said
+In MySQL 8.0.44, foreign keys are more than just "types"—they are defined by their Referential Actions (the "Cascades") and their Index Requirements.
+
+Senior developers distinguish between the Referential Action (what happens during a delete/update) and the Physical Constraint (the underlying index requirements).
+
+## Difference between using EntityManager.persist() and productRepository.save() 
+
+1. Why EntityManager throws IllegalStateException
+   In your first test, you are using entityManager.persist(product).
+
+The Level: This is the "Low Level" JPA API.
+
+The Logic: When you call .persist() on a Product that has a Category that Hibernate doesn't know about (Transient), Hibernate realizes it cannot fulfill the contract of persisting the object.
+
+The Result: Since you are calling the raw provider (Hibernate), it throws a Direct Exception. In many configurations, Hibernate wraps the "Transient Object" error as an IllegalStateException (specifically, a java.lang.IllegalStateException containing the message 'save the transient instance before flushing').
+
+2. Why ProductRepository throws InvalidDataAccessApiUsageException
+   In your second test, you are using productRepository.save(product).
+
+The Level: This is the "High Level" Spring Data JPA API.
+
+The Logic: Spring Data Repositories are wrapped in a Proxy. One of the primary jobs of this proxy is Exception Translation.
+
+The Result: Spring catches the underlying Hibernate IllegalStateException (or TransientPropertyValueException) and translates it into Spring’s own Data Access Exception hierarchy.
+
+InvalidDataAccessApiUsageException is Spring's way of saying: "You are using the JPA API incorrectly (i.e., trying to save a child before its parent)."
+
+
+
+
+-----------------------------------------------------------------------------------------------------------------------------
 ## SpringDataJpa - already converts the checked exceptions like SQLException  into DataAccessException - a RuntimeException 
-
--------------------------------------------------------------------------------------------------------
+Exception Handling in Springboot
+-----------------------------------------------------------------------------------------------------------------------------
 public class DatabaseTechnicalException extends RuntimeException {
 private final String internalErrorCode;
 
@@ -274,7 +341,7 @@ public class GlobalExceptionHandler {
     }
 }
 
-//Preservation of root cause by calling super(message,cause); in the constructor of new BusinessExcpetion that extends RuntimeException
+//Preservation of root cause by calling super(message,cause); in the constructor of new BusinessException that extends RuntimeException
 
 1. The Custom "Wrapper" Exception
    Notice the use of super(message, cause). This is the mechanism that chains the exceptions together in the stack trace.
@@ -385,6 +452,7 @@ private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler
         return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
+
 What the Logs Look Like (The Result)
 If you did not preserve the cause, your logs would only show:
 DataAccessException: Failed to update order status in DB (No clue why!)
@@ -429,3 +497,57 @@ private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler
 -------------------------------------------------------------------------------------------------------
 
 (other examples include DuplicationMappingException - when 2 entities try to use same db table, DataIntegrityViolationException ,etc)
+
+
+-------------------------------------------------------------------------------------------------------------------
+
+Search for the Flyway migration process in Gemini chat history, how we use the ddl-auto property to validate
+V1__init_schema.sql script is used to create the database, once its success, flyway maintains the v1 success status with its flyway_schema_history table in MySQL.
+if you need any more changes, you need to move those changes to a v2__ 
+
+## 1. Create the next migration file
+   Create a new file in src/main/resources/db/migration/ named V2__add_inventory_to_product.sql.
+
+SQL
+-- Adding a new column to the existing product table
+ALTER TABLE product
+ADD COLUMN available_stock INT DEFAULT 0;
+
+-- You can even do data migration in the same script
+UPDATE product SET available_stock = 10 WHERE price > 100.0;
+
+## 2. Update your Java Code
+   Now, update your Product entity to match the new schema:
+
+Java
+@Entity
+public class Product extends BaseModel {
+// ... existing fields
+
+    @Column(name = "available_stock")
+    private int availableStock; 
+}
+
+## 3. How Flyway handles this internally
+   When you start your Spring Boot app:
+
+Flyway checks the flyway_schema_history table in MySQL.
+
+It sees that V1 is already "Success".
+
+It sees V2 is new.
+
+It executes the ALTER TABLE command.
+
+It records V2 as "Success".
+
+Hibernate Validation kicks in, sees the new column exists, and the app starts happily.
+
+## Pro-Tip: Handling the "Checksum" Error
+If you ever edit the code inside V1__init_schema.sql after it has already run, Flyway will throw an error: Migration checksum mismatch.
+
+## Why? Flyway ensures that nobody "rewrites history."
+
+## The Fix: If you made a mistake in V1, don't edit V1. Instead, create a V3 to fix the mistake.
+
+## The "I'm in Dev" Fix: If you really want to reset, use spring.flyway.clean-on-validation-error=true (Careful! This wipes the DB) or just wipe your Docker volume again.
