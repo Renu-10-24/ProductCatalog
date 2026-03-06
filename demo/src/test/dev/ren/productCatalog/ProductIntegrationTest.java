@@ -4,6 +4,7 @@ package dev.ren.productCatalog;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import dev.ren.productCatalog.models.Category;
 import dev.ren.productCatalog.models.Product;
+import dev.ren.productCatalog.repositories.CategoryRepository;
 import dev.ren.productCatalog.repositories.ProductRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.DisplayName;
@@ -21,12 +22,14 @@ import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabas
 // TESTCONTAINERS 2.0.0 SPECIFIC (Optional, check your IDE)
 // Testcontainers 2.0 flattened many container packages
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.mysql.MySQLContainer;
 import org.hibernate.exception.ConstraintViolationException;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @DataJpaTest
@@ -42,6 +45,8 @@ public class ProductIntegrationTest {
     private EntityManager entityManager;
     @Autowired
     private ProductRepository productRepository;
+    @Autowired
+    private CategoryRepository categoryRepository;
 
     @Test
     void test_FKConstraint() {
@@ -115,5 +120,29 @@ public class ProductIntegrationTest {
             entityManager.remove(cat);
             entityManager.flush();
         });
+    }
+    @Test
+    //dirty write to db without save or persist
+    @Transactional // 1. Transaction Starts
+    public void updateProductCategory() {
+
+        Product product = new Product("Television");
+        productRepository.saveAndFlush(product);
+        // 1. Product is loaded into the Persistence Context (Managed State)
+        Product prdFromDb = productRepository.findByName(product.getName()).get();
+        Category category = new Category("Gadgets");
+        categoryRepository.saveAndFlush(category);
+        // 2. Category is loaded into the Persistence Context (Managed State)
+        Category ctgryFromDb = categoryRepository.findByName(category.getName()).get();
+        // 4. You only call the setter -- This is the dirty write, No .save() or .persist() is called here!
+        prdFromDb.setCategory(ctgryFromDb);
+        // 5.  Verification Technique
+        entityManager.flush(); // Send to MySQL
+        entityManager.clear(); // Wipe Java memory (L1 Cache)
+        // 6. Assert: Pull a fresh copy from MySQL
+        Product freshProduct = productRepository.findByName(product.getName()).get();
+        // 7. Assert that the product has a category
+        assertThat(freshProduct.getCategory()).isNotNull();
+        assertThat(freshProduct.getCategory().getName()).isEqualTo("Gadgets");
     }
 }
