@@ -61,9 +61,9 @@ public class ProductIntegrationTest {
         // 1. Arrange
         // We manually create a 'detached/ghost' category with an ID.
         // Hibernate sees an ID and assumes it exists in the DB, so it proceeds to generate SQL.
-        Category ghostCategory = new Category("Not a valid category");
-        //malpractice not allowed to pass Uuid ideally
-        ghostCategory.setUuid(UUID.randomUUID());
+        UUID nonExistentUuid = UUID.randomUUID();
+        //Hibernate uses Reflection and proxying via getReference to object of Category without using its constructor or setUuid()
+        Category ghostCategory = entityManager.getReference(Category.class, nonExistentUuid);
         Product product = new Product("Industrial Drill");
         product.setCategory(ghostCategory);
 
