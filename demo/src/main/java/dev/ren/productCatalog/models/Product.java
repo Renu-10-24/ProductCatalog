@@ -1,10 +1,7 @@
 package dev.ren.productCatalog.models;
 
 import dev.ren.productCatalog.repositories.CategoryRepository;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -14,23 +11,23 @@ import lombok.ToString;
 @Getter
 @Entity
 @NoArgsConstructor
-@ToString
+@ToString(exclude = {"category"})// to fix the Json serialization recursion when toString() is called recursively on Category and inside category on each product, throws StackOverflowError
 public class Product extends BaseModel{
-    private String title;
+    private String name;
     private String description;
     private String image;
     @JoinColumn(name = "category_id", referencedColumnName = "id")
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY) //
     private Category category;
     private double price;
-    public Product(String title, String description, String image, Category category, double price){
-        this.title = title;
+    public Product(String name, String description, String image, Category category, double price){
+        this.name = name;
         this.description=description;
         this.image = image;
         this.category = category;
         this.price=price;
     }
-    public Product(String title){
-        this.title = title;
+    public Product(String name){
+        this.name = name;
     }
 }

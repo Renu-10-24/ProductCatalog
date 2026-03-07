@@ -169,6 +169,7 @@ class ProductCatalogApplicationTests {
         category.setName("Phones");
         Category savedCategory = categoryRepository.save(category);
         Product product = new Product();
+        product.setName("iPhone");
         product.setPrice(100);
         product.setCategory(category);
         product.setImage("Helllow.jpg");
@@ -183,11 +184,11 @@ class ProductCatalogApplicationTests {
         //its l1 cache - Persistence Context, to test the lazy loading, we are manually wiping out the cache with clear method
         // Wipe the L1 cache / detach all objects
         entityManager.clear();
-        System.out.println("fjfkflkF " + prdFromDb.getUuid());
+        System.out.println("fjfkflkF " + prdFromDb.getName());
 
         // 3. Now Fetch
         System.out.println("--- FETCHING PRODUCT NOW ---");
-        Product fetchedProduct = productRepository.findById(prdFromDb.getUuid()).get();
+        Product fetchedProduct = productRepository.findByName(prdFromDb.getName()).get();
 
         // Check your logs here! You should see only ONE query for Product.
 

@@ -499,7 +499,66 @@ private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler
 (other examples include DuplicationMappingException - when 2 entities try to use same db table, DataIntegrityViolationException ,etc)
 
 
--------------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+To login to TestContainer in MySQL Workbench (NOT recommended but, for thorough debugging in dev, test)
+
+## How to Connect MySQL Workbench (If you really want to)
+   If you still want to "see" the data for learning purposes, you have to stop the test from finishing (which kills the container).
+
+Add a Breakpoint: Put a breakpoint on the last line of your test.
+
+Find the Port: Look at your console logs. Testcontainers will print something like:
+Creating container for image: mysql:8.0.44
+Container mysql:8.0.44 is started: [localhost:32768]
+
+Connect Workbench: * Hostname: localhost
+
+Port: 32768 (or whatever the log said)
+
+User/Pass: test/test (default for Testcontainers)
+
+
+
+-----------------------------------------------------------------------------------------------------------------------------
+1. The "Under the Hood" Mechanics
+   Scenario A: category.setProducts(newProducts)
+   When Hibernate loads your Category, the products field is not a standard ArrayList. It is a PersistentBag (a wrapper that tracks changes).
+
+The Action: You throw away Hibernate's PersistentBag and replace it with a plain java.util.ArrayList.
+
+Hibernate's Reaction: Hibernate loses its "tracking link" to that collection. It can no longer determine which specific items were added or removed.
+
+The "Nuclear" Strategy: Because it can't be sure what changed, Hibernate takes the safest (but most expensive) route: It deletes every single row associated with that Category ID and re-inserts everything from the new list.
+
+##  Hibernate Preferred way ----- Scenario B: clear() and addAll()
+
+The Action: You keep the PersistentBag instance and modify its internal contents.
+
+Hibernate's Reaction: Since the "wrapper" is still the same object, Hibernate's dirty-tracking logic remains active.
+
+## The "Smart" Strategy: Hibernate compares the old state of the bag with the new state. It identifies exactly which IDs are missing (sends DELETE) and which are new (sends INSERT). If a product was in the list before and is still there, it does nothing.
+
+Imagine a Category (ID: 1) that has 2 products (IDs: 10, 11). You want to change it to have Product 11 and a New Product 12.
+
+First way of category.setProducts(newProducts)  -- would delete all existing and insert all from new list
+
+In the Second way, Hibernate would still be able to track the existing items, would delete only unwanted products and insert new ones 
+
+
+----------------------------------------------------------------------------------------------------------------------------
+https://www.baeldung.com/jpa-cascade-types
+https://www.baeldung.com/hibernate-lazy-eager-loading
+----------------------------------------------------------------------------------------------------------------------------
+(exclude = {"category"})
+
+Or use @JsonManagedReference on parent and 
+@JsonManagedBackReference on the child entity
+
+(exclude = {"category"})
+
+
+
+----------------------------------------------------------------------------------------------------------------------------
 
 Search for the Flyway migration process in Gemini chat history, how we use the ddl-auto property to validate
 V1__init_schema.sql script is used to create the database, once its success, flyway maintains the v1 success status with its flyway_schema_history table in MySQL.
