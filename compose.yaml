@@ -1,11 +1,77 @@
+version: "3.9"
+
 services:
   mysql:
-    image: 'mysql:8.0'
+    image: mysql:8.0
+    container_name: productcatalog-mysql
     environment:
-      - 'MYSQL_DATABASE=mydatabase'
-      - 'MYSQL_USER=myuser'
-      - 'MYSQL_PASSWORD=secret'
-      - 'MYSQL_ROOT_PASSWORD=topsecret'
-
+      MYSQL_DATABASE: mydatabase
+      MYSQL_USER: myuser
+      MYSQL_PASSWORD: secret
+      MYSQL_ROOT_PASSWORD: topsecret
     ports:
-      - '3306:3306'
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--web.enable-otlp-receiver"
+    volumes:
+      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+
+  tempo:
+    image: grafana/tempo:latest
+    container_name: tempo
+    command: [ "-config.file=/etc/tempo/tempo.yml" ]
+    volumes:
+      - ./observability/tempo/tempo.yml:/etc/tempo/tempo.yml:ro
+      - tempo-data:/var/tempo
+    ports:
+      - "3200:3200"   # Tempo query API
+      - "4317:4317"   # OTLP gRPC ingest
+      - "4318:4318"   # OTLP HTTP ingest
+    restart: unless-stopped
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.147.0
+    container_name: otel-collector
+    command: [ "--config=/etc/otelcol-contrib/config.yaml" ]
+    volumes:
+      - ./observability/otel/config.yaml:/etc/otelcol-contrib/config.yaml:ro
+    ports:
+      - "4319:4317"   # host port for OTLP gRPC to collector
+      - "4320:4318"   # host port for OTLP HTTP to collector
+      - "8889:8889"   # Prometheus scrape endpoint for collector metrics
+    depends_on:
+      - tempo
+      - prometheus
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+      - tempo
+    restart: unless-stopped
+
+volumes:
+  mysql-data:
+  tempo-data:
+  grafana-data:
