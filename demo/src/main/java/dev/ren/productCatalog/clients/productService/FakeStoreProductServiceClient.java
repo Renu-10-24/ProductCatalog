@@ -3,6 +3,8 @@ package dev.ren.productCatalog.clients.productService;
 import dev.ren.productCatalog.dtos.FakeStoreProductDTO;
 import dev.ren.productCatalog.dtos.GenericProductDTO;
 import dev.ren.productCatalog.services.exceptions.ResourceNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatusCode;
@@ -15,6 +17,8 @@ import java.util.List;
 
 @Service
 public class FakeStoreProductServiceClient{
+    private static final Logger log = LoggerFactory.getLogger(FakeStoreProductServiceClient.class);
+
     private final RestClient restClient;
     public FakeStoreProductServiceClient(RestClient restClient) {
         this.restClient = restClient;
@@ -52,26 +56,23 @@ public class FakeStoreProductServiceClient{
         return dtoArrayResponseEntity;
     }
 
-    public FakeStoreProductDTO createProduct(GenericProductDTO product){
-        System.out.println("id       "+product.id());
-        System.out.println("title    "+product.title());
-        ResponseEntity<FakeStoreProductDTO> response = restClient.post()
-                .uri("/products")
-                .body(product)
-                .retrieve()
-                .toEntity(FakeStoreProductDTO.class);
-        System.out.println("response body - product : "+response.getBody());
-        System.out.println("status  : "+response.getStatusCode());
-        if(response.getStatusCode().is4xxClientError()){
-            System.out.println("Malformed request");
+    public FakeStoreProductDTO createProduct(GenericProductDTO product) {
+        System.out.println("id       " + product.id());
+        System.out.println("title    " + product.title());
+
+        log.info("Creating product title={} price={} category={} image={}", product.title(), product.price(), product.category(), product.image());
+        try {
+            ResponseEntity<FakeStoreProductDTO> response = restClient.post()
+                    .uri("/products")
+                    .body(product)
+                    .retrieve()
+                    .toEntity(FakeStoreProductDTO.class);
+            log.info("FakeStore response status={} body={}", response.getStatusCode(), response.getBody());
+            return response.getBody();
+        } catch (Exception e) {
+            log.error("FakeStore createProduct failed", e);
+            throw e;
         }
-        if(response.getStatusCode().is2xxSuccessful()){
-            System.out.println("Product created successfully with id "+response.getBody().id());
-        }
-        if(response.getStatusCode().is5xxServerError()){
-            System.out.println("Server side error");
-        }
-        return response.getBody();
     }
 
     public FakeStoreProductDTO deleteProductById(long id) throws ResourceNotFoundException {
