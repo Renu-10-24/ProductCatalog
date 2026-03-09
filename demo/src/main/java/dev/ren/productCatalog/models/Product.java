@@ -17,7 +17,7 @@ public class Product extends BaseModel{
     private String description;
     private String image;
     @JoinColumn(name = "category_id", referencedColumnName = "id")
-    @ManyToOne(fetch = FetchType.LAZY) //
+    @ManyToOne(fetch = FetchType.LAZY, cascade=CascadeType.PERSIST) //
     private Category category;
     private double price;
     public Product(String name, String description, String image, Category category, double price){

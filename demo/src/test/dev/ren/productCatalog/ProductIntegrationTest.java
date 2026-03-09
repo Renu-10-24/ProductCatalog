@@ -7,6 +7,7 @@ import dev.ren.productCatalog.repositories.CategoryRepository;
 import dev.ren.productCatalog.repositories.ProductRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import org.hibernate.PersistentObjectException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,7 +24,10 @@ import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabas
 
 // TESTCONTAINERS 2.0.0 SPECIFIC (Optional, check your IDE)
 // Testcontainers 2.0 flattened many container packages
+import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.InvalidDataAccessApiUsageException;
+import org.springframework.test.context.jdbc.Sql;
 import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -35,6 +39,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
@@ -269,6 +274,38 @@ public class ProductIntegrationTest {
         for (UUID uid : prod_uuids) {
             assertNull(entityManager.find(Product.class, uid));
         }
+    }
+
+    @Test
+    @Sql("/scripts/init_products.sql")
+    void saveProductsForCategorySuccess(){// Cascade on category in Product entity -> on save, of Product, Category should also be saved.
+        Category category = categoryRepository.findByName("Laptops").get();
+
+        Product product = new Product("DELL Inspiron");
+        product.setPrice(1000);
+        product.setCategory(category);
+        productRepository.saveAndFlush(product);
+        entityManager.clear();
+        Product prdFromDb = productRepository.findById(product.getUuid()).get();
+        assertEquals(prdFromDb.getCategory().getName(), "Laptops");
+        assertThat(categoryRepository.findByName("Laptops").isPresent());
+    }
+
+    @Test
+    @Sql("/scripts/init_products.sql")
+    void saveProductsForCategory_fail_for_detached_entity(){// when trying to save product with detached entity, assert for the rootcause as shown here
+        Category category = categoryRepository.findByName("Laptops").get();
+        entityManager.detach(category);
+
+        Product product = new Product("DELL Inspiron");
+        product.setPrice(1000);
+        product.setCategory(category);
+
+        assertThatThrownBy(()->productRepository.saveAndFlush(product))
+                .isInstanceOf(DataAccessException.class)
+                .hasRootCauseInstanceOf(PersistentObjectException.class)
+                .hasStackTraceContaining("Detached entity passed to persist");
+
     }
 
 }
