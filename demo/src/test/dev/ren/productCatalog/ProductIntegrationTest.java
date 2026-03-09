@@ -27,6 +27,7 @@ import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabas
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
+import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.junit.jupiter.Container;
@@ -34,9 +35,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.mysql.MySQLContainer;
 import org.hibernate.exception.ConstraintViolationException;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -65,10 +64,13 @@ public class ProductIntegrationTest {
         Category cat = new Category("Tech");
         Product product = new Product("Laptop");
         product.setCategory(cat);
-        assertThrows(IllegalStateException.class, () -> {
-            entityManager.persist(product);
-            entityManager.flush();
-        });
+//        assertThrows(IllegalStateException.class, () -> {
+//            entityManager.persist(product);
+//            entityManager.flush();
+//        });
+        entityManager.persist(product);
+        entityManager.flush();
+        assertNotNull(entityManager.find(Product.class,product.getUuid()));
     }
 
     @Test
@@ -107,11 +109,16 @@ public class ProductIntegrationTest {
 
         // 2. Act & Assert
         // MySQL Error 1451: 'Cannot delete or update a parent row: a foreign key constraint fails'
-        assertThrows(ConstraintViolationException.class, () -> {
+/*        assertThrows(ConstraintViolationException.class, () -> {
             Category managedCat = entityManager.find(Category.class, cat.getUuid());
             entityManager.remove(managedCat);
             entityManager.flush(); // Force the DELETE SQL to hit MySQL
-        }, "MySQL should block deletion of a Category that still has Products");
+        }, "MySQL should block deletion of a Category that still has Products");*/
+
+        //Now that, we have CascadeType.REMOVE on Category, deleting Category - would delete the corresponding products in product table
+        Category managedCat = entityManager.find(Category.class, cat.getUuid());
+        entityManager.remove(managedCat);
+        assertNull(entityManager.find(Product.class,p.getUuid()));
     }
 
     @Test

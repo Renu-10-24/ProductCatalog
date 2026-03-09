@@ -589,7 +589,43 @@ c1_0.name=?
 2026-03-09T08:20:20.368-05:00 DEBUG 35352 --- [productCatalog] [           main] o.s.orm.jpa.JpaTransactionManager        : Rolling back JPA transaction on EntityManager [SessionImpl(2047238003<open>)]
 2026-03-09T08:20:20.374-05:00 DEBUG 35352 --- [productCatalog] [           main] o.s.orm.jpa.JpaTransactionManager        : Closing JPA EntityManager after transaction
 
---------------------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------------------------------------
+## DO NOT use @Rollback or commit; in the script file. It is persisting the rows across Test methods, that might break the integrity of tests later point. 
+## I wrote the tests in assumption that there are NO records in any table that I was using in the tests.
+
+## Always do a setup for test in isolation and run and clean up - if need be, have to explore this.
+
+## Do NOT use COMMIT in the script file, its also persisting the state of DB across tests
+## Do NOT use @Rollback(value - false) - it changes the ISOLATION_DEFAULT level of DB to persist the transactions to db.
+
+@Test
+@Sql("/scripts/init_products.sql")
+@Rollback(value = false) // instead of flush and clear, we can also use Rollback false for the same usecase
+void saveProductsForCategorySuccess_with_rollback(){// Cascade on category in Product entity -> on save, of Product, Category should also be saved.
+Category category = categoryRepository.findByName("Laptops").get();
+
+        Product product = new Product("DELL Inspiron");
+        product.setPrice(1000);
+        product.setCategory(category);
+        productRepository.save(product);
+
+        Product prdFromDb = productRepository.findById(product.getUuid()).get();
+        assertEquals(prdFromDb.getCategory().getName(), "Laptops");
+        assertThat(categoryRepository.findByName("Laptops").isPresent());
+    }
+
+## Giving an explicit COMMIT in the sql script(insert into category and then commit), resulted in writing 2 rows in Category and when I had this line :
+
+Category category = categoryRepository.findByName("Laptops").get();
+
+that was not assuming we could have multiple rows with same name, it threw org.springframework.dao.IncorrectResultSetSizeException
+and broke the test that was passing earlier without the commit in the sql script.
+
+## Read about Propagation and Default Isolation levels for the DB used and current settings - before coding.
+
+
+
+
 
 ----------------------------------------------------------------------------------------------------------------------------------------------------
 
