@@ -300,7 +300,7 @@ public class ProductIntegrationTest {
 
     @Test
     @Sql("/scripts/init_products.sql")
-    void saveProductsForCategory_fail_for_detached_entity(){// when trying to save product with detached entity, assert for the rootcause as shown here
+    void saveProductWithDetachedCategory_fail_for_detached_object(){// when trying to save product with detached object category, assert for the rootcause as shown here
         Category category = categoryRepository.findByName("Laptops").get();
         entityManager.detach(category);
 
@@ -312,7 +312,8 @@ public class ProductIntegrationTest {
                 .isInstanceOf(DataAccessException.class)
                 .hasRootCauseInstanceOf(PersistentObjectException.class)
                 .hasStackTraceContaining("Detached entity passed to persist");
-
     }
+
+
 
 }
