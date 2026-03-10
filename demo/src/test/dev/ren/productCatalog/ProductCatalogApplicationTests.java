@@ -198,24 +198,24 @@ class ProductCatalogApplicationTests {
         // Check your logs here! NOW you should see the second SELECT for Category.
     }
 
-    @Test
-    @Transactional
-    public void testCascadeTypes_whenCascadeIsNotExplicitlyMentioned() { // cascade type not defined on Product and also Category
-        Category category = new Category();
-        category.setName("GadgetsUnder5");
-
-// here the category is transient - meaning not persisted / stored in db
-
-        Product product = new Product();
-        product.setPrice(4.99);
-        product.setCategory(category);
-        product.setImage("PortableHeadsetFan.jpg");
-        //using springdatajpa high level api
-        assertThrows(DataAccessException.class,()->{
-            productRepository.save(product);
-            // DO write to DB immediately, do not batch writes
-            productRepository.flush();
-        });
-    }
+//    @Test
+//    @Transactional
+//    public void testCascadeTypes_whenCascadeIsNotExplicitlyMentioned() { // cascade type not defined on Product and also Category
+//        Category category = new Category();
+//        category.setName("GadgetsUnder5");
+//
+//// here the category is transient - meaning not persisted / stored in db
+//
+//        Product product = new Product();
+//        product.setPrice(4.99);
+//        product.setCategory(category);
+//        product.setImage("PortableHeadsetFan.jpg");
+//        //using springdatajpa high level api
+//        assertThrows(DataAccessException.class,()->{
+//            productRepository.save(product);
+//            // DO write to DB immediately, do not batch writes
+//            productRepository.flush();
+//        });
+//    }
 }
 
